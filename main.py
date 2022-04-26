@@ -1,9 +1,10 @@
 """File description"""
 
 import csv
-from pprint import pprint
 from tkinter import *
+from PIL import Image, ImageTk
 import matplotlib.pyplot as plt
+from ttkthemes import ThemedStyle
 
 
 def read_data(file_name: str) -> tuple[dict, dict, dict]:
@@ -122,12 +123,12 @@ def goals_per_game(parameter: str) -> tuple[list, list]:
     return teams, gpg
 
 
-def highest_win_rate(answer: str = '550') -> tuple[list, list]:
+def highest_win_rate(answer: str) -> tuple[list, list]:
     """Return the top 10 teams with the highest win percentage"""
     all_rates = {}
     for team in TEAMS:
         if TEAMS[team][1] > int(answer):
-            all_rates[team] = TEAMS[team][0][1] / TEAMS[team][1] * 100
+            all_rates[team] = TEAMS[team][0][0] / TEAMS[team][1] * 100
     teams = []
     rates = []
     while len(teams) < 10:
@@ -143,14 +144,69 @@ def highest_win_rate(answer: str = '550') -> tuple[list, list]:
     return teams, rates
 
 
-def plot_win_rate() -> None:
+def lowest_win_rate(answer: str) -> tuple[list, list]:
+    """Return the top 10 teams with the highest win percentage"""
+    all_rates = {}
+    for team in TEAMS:
+        if TEAMS[team][1] > int(answer):
+            all_rates[team] = TEAMS[team][0][0] / TEAMS[team][1] * 100
+    teams = []
+    rates = []
+    while len(teams) < 10:
+        min_so_far = 100
+        min_key = None
+        for team in all_rates:
+            if all_rates[team] < min_so_far:
+                min_so_far = all_rates[team]
+                min_key = team
+        teams.append(min_key)
+        rates.append(min_so_far)
+        all_rates.pop(min_key)
+    return teams, rates
+
+
+min_input = StringVar()
+
+
+def plot_win_rate_highest() -> None:
     """Plot the top 10 win rate stats on a bar chart"""
+    textbox = Entry(WIN, textvariable=min_input)
+    textbox.place(x=250, y=300)
+    label = Label(WIN, text="Must be a number from 0 to 550", fg='red', font=("Arial Bold", 16))
+    label.place(x=260, y=270)
+    submit_button = Button(WIN, text='Submit', font=("Arial", 16), command=submit_highest)
+    submit_button.place(x=450, y=300)
 
+
+def submit_highest() -> None:
     new_colours = ['green', 'blue', 'purple', 'brown', 'teal']
+    answer = min_input.get()
 
-    teams, rates = highest_win_rate()
+    teams, rates = highest_win_rate(answer)
     plt.bar(teams, rates, color=new_colours)
-    plt.title('Highest Win % since 2000 (550+ Games)')
+    plt.title('Highest Win % since 2000 (' + answer + '+ Games)')
+    plt.xlabel('Team')
+    plt.ylabel('Win Percentage')
+    plt.show()
+
+
+def plot_win_rate_lowest() -> None:
+    """Plot the bottom 10 win rate stats on a bar chart"""
+    textbox = Entry(WIN, textvariable=min_input)
+    textbox.place(x=250, y=300)
+    label = Label(WIN, text="Must be a number from 0 to 550", fg='red', font=("Arial Bold", 16))
+    label.place(x=260, y=270)
+    submit_button = Button(WIN, text='Submit', font=("Arial", 16), command=submit_lowest)
+    submit_button.place(x=450, y=300)
+
+
+def submit_lowest() -> None:
+    new_colours = ['green', 'blue', 'purple', 'brown', 'teal']
+    answer = min_input.get()
+
+    teams, rates = lowest_win_rate(answer)
+    plt.bar(teams, rates, color=new_colours)
+    plt.title('Lowest Win % since 2000 (' + answer + '+ Games)')
     plt.xlabel('Team')
     plt.ylabel('Win Percentage')
     plt.show()
@@ -158,10 +214,8 @@ def plot_win_rate() -> None:
 
 def ft_gui() -> None:
     """GUI Window for full time stats"""
-    for widgets in WIN.winfo_children():
-        widgets.destroy()
-    home = Button(WIN, text='Home', font=("Arial", 16), command=go_home)
-    home.place(x=10, y=10)
+    clear()
+    add_home_button()
     scored = Button(WIN, text='Most Goals Scored Per Game', font=("Arial", 16), command=plot_fta_goals)
     conceded = Button(WIN, text='Least Goals Conceded Per Game', font=("Arial", 16), command=plot_fta_conceded)
     scored.place(x=280, y=50)
@@ -170,14 +224,28 @@ def ft_gui() -> None:
 
 def win_rate_gui() -> None:
     """GUI Window for win rates"""
-    for widgets in WIN.winfo_children():
-        widgets.destroy()
-    home = Button(WIN, text='Home', font=("Arial", 16), command=go_home)
-    home.place(x=10, y=10)
-    highest = Button(WIN, text='Highest Win %', font=("Arial", 16), command=plot_win_rate)
-    lowest = Button(WIN, text='Lowest Win %', font=("Arial", 16), command=plot_win_rate)
+    clear()
+    add_home_button()
+    highest = Button(WIN, text='Highest Win %', font=("Arial", 16), command=plot_win_rate_highest)
+    lowest = Button(WIN, text='Lowest Win %', font=("Arial", 16), command=plot_win_rate_lowest)
     highest.place(x=330, y=50)
     lowest.place(x=333, y=100)
+
+
+def add_home_button() -> None:
+    """Add a home button in the top left"""
+    home = Button(WIN, text='Home', font=("Arial", 16), command=go_home)
+    home.place(x=10, y=10)
+
+
+def clear() -> None:
+    for widgets in WIN.winfo_children():
+        widgets.destroy()
+    label = Label(WIN, text="Please close graph window after each plot", fg='red', font=("Arial Bold", 12))
+    label.place(x=270, y=700)
+    img = ImageTk.PhotoImage(Image.open("Untitled-1.png").resize((570, 200)))
+    panel = Label(WIN, image=img)
+    panel.pack()
 
 
 def go_home() -> None:
@@ -192,10 +260,31 @@ def main_gui_window() -> None:
     WIN.title('PremierStats')
     b1 = Button(WIN, text='Full time stats', font=("Arial", 16), command=ft_gui)
     b2 = Button(WIN, text='Win Rate', font=("Arial", 16), command=win_rate_gui)
-    b1.place(x=330, y=10)
-    b2.place(x=345, y=60)
-    WIN.geometry("800x800+10+10")
+    b3 = Button(WIN, text='More soon...', font=("Arial", 16))
+    b1.place(x=330, y=210)
+    b2.place(x=345, y=260)
+    b3.place(x=333, y=310)
+    WIN.geometry("800x800+320+10")
+    label = Label(WIN, text="Please close graph window after each plot", fg='red', font=("Arial Bold", 12))
+    label.place(x=270, y=700)
+    img = ImageTk.PhotoImage(Image.open("Untitled-1.png").resize((570, 200)))
+    panel = Label(WIN, image=img)
+    panel.pack()
+    b4 = Button(WIN, text='Night Mode', font=("Arial", 16), command=night_mode)
+    b5 = Button(WIN, text='Day Mode', font=("Arial", 16), command=anti_night_mode)
+    b4.place(x=340, y=610)
+    b5.place(x=345, y=560)
     WIN.mainloop()
+
+
+def night_mode() -> None:
+    """Change the background to night mode"""
+    WIN['background'] = '#323232'
+
+
+def anti_night_mode() -> None:
+    """Change the background to day mode"""
+    WIN['background'] ='#EBEBEB'
 
 
 if __name__ == '__main__':
