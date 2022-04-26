@@ -2,6 +2,7 @@
 
 import csv
 from pprint import pprint
+from tkinter import *
 import matplotlib.pyplot as plt
 
 
@@ -57,6 +58,7 @@ def stats_adder(team_name: str, ft_goals_scored: int,
 
 
 TEAMS, FT_GOALS, SCORED_CONCEDED = read_data('final_dataset.csv')
+WIN = Tk()
 
 
 def full_time_analyzer(teams: dict, scored_conceded: dict) -> dict:
@@ -70,28 +72,26 @@ def full_time_analyzer(teams: dict, scored_conceded: dict) -> dict:
     return stats
 
 
-def plot_fta() -> None:
-    """Plot the top 10 full time stats on a bar chart"""
+def plot_fta_goals() -> None:
+    """Plot the top 10 goals scored per game on a bar chart"""
     new_colours = ['green', 'blue', 'purple', 'brown', 'teal']
+    teams, goals_scored_per_game = goals_per_game('scored')
+    plt.bar(teams, goals_scored_per_game, color=new_colours)
+    plt.title('Goals Scored per Game since 2000')
+    plt.xlabel('Team')
+    plt.ylabel('Goals Scored per Game')
+    plt.show()
 
-    print('Pick from the following analyses \n'
-          'Most goals scored per game (GSPG), Least goals conceded per game (GCPG)\n')
-    answer = input('Your Pick: (GSPG, GCPG)')
 
-    if answer == 'GSPG':
-        teams, goals_scored_per_game = goals_per_game('scored')
-        plt.bar(teams, goals_scored_per_game, color=new_colours)
-        plt.title('Goals Scored per Game since 2000')
-        plt.xlabel('Team')
-        plt.ylabel('Goals Scored per Game')
-        plt.show()
-    elif answer == 'GCPG':
-        teams, goals_scored_per_game = goals_per_game('conceded')
-        plt.bar(teams, goals_scored_per_game, color=new_colours)
-        plt.title('Goals Conceded per Game since 2000')
-        plt.xlabel('Team')
-        plt.ylabel('Goals Conceded per Game')
-        plt.show()
+def plot_fta_conceded() -> None:
+    """Plot the top 10 goals conceded per game on a bar chart"""
+    new_colours = ['green', 'blue', 'purple', 'brown', 'teal']
+    teams, goals_scored_per_game = goals_per_game('conceded')
+    plt.bar(teams, goals_scored_per_game, color=new_colours)
+    plt.title('Goals Conceded per Game since 2000')
+    plt.xlabel('Team')
+    plt.ylabel('Goals Conceded per Game')
+    plt.show()
 
 
 def goals_per_game(parameter: str) -> tuple[list, list]:
@@ -122,7 +122,7 @@ def goals_per_game(parameter: str) -> tuple[list, list]:
     return teams, gpg
 
 
-def highest_win_rate(answer: str) -> tuple[list, list]:
+def highest_win_rate(answer: str = '550') -> tuple[list, list]:
     """Return the top 10 teams with the highest win percentage"""
     all_rates = {}
     for team in TEAMS:
@@ -145,34 +145,58 @@ def highest_win_rate(answer: str) -> tuple[list, list]:
 
 def plot_win_rate() -> None:
     """Plot the top 10 win rate stats on a bar chart"""
-    print('Minimum Number of Games? (0 to 550) \n')
-    answer = input('Your pick:')
 
     new_colours = ['green', 'blue', 'purple', 'brown', 'teal']
 
-    teams, rates = highest_win_rate(answer)
+    teams, rates = highest_win_rate()
     plt.bar(teams, rates, color=new_colours)
-    plt.title('Highest Win % since 2000 (' + answer + '+ Games)')
+    plt.title('Highest Win % since 2000 (550+ Games)')
     plt.xlabel('Team')
     plt.ylabel('Win Percentage')
     plt.show()
 
 
-def run_stat_caller() -> None:
-    """Run the stats caller for the user"""
-    print('Pick from the following analyses:\n'
-          'Most Wins, Most Losses, Highest Win Rate, Highest Lose Rate, Goals \n')
-    answer = input('Your pick:')
-    if answer == 'Goals':
-        print('\n')
-        plot_fta()
-    elif answer == 'Highest Win Rate':
-        print('\n')
-        plot_win_rate()
-    else:
-        print('Invalid Input - Restart Program')
-        quit()
+def ft_gui() -> None:
+    """GUI Window for full time stats"""
+    for widgets in WIN.winfo_children():
+        widgets.destroy()
+    home = Button(WIN, text='Home', font=("Arial", 16), command=go_home)
+    home.place(x=10, y=10)
+    scored = Button(WIN, text='Most Goals Scored Per Game', font=("Arial", 16), command=plot_fta_goals)
+    conceded = Button(WIN, text='Least Goals Conceded Per Game', font=("Arial", 16), command=plot_fta_conceded)
+    scored.place(x=280, y=50)
+    conceded.place(x=265, y=100)
+
+
+def win_rate_gui() -> None:
+    """GUI Window for win rates"""
+    for widgets in WIN.winfo_children():
+        widgets.destroy()
+    home = Button(WIN, text='Home', font=("Arial", 16), command=go_home)
+    home.place(x=10, y=10)
+    highest = Button(WIN, text='Highest Win %', font=("Arial", 16), command=plot_win_rate)
+    lowest = Button(WIN, text='Lowest Win %', font=("Arial", 16), command=plot_win_rate)
+    highest.place(x=330, y=50)
+    lowest.place(x=333, y=100)
+
+
+def go_home() -> None:
+    """Return to the home GUI"""
+    for widgets in WIN.winfo_children():
+        widgets.destroy()
+    main_gui_window()
+
+
+def main_gui_window() -> None:
+    """Main GUI Window"""
+    WIN.title('PremierStats')
+    b1 = Button(WIN, text='Full time stats', font=("Arial", 16), command=ft_gui)
+    b2 = Button(WIN, text='Win Rate', font=("Arial", 16), command=win_rate_gui)
+    b1.place(x=330, y=10)
+    b2.place(x=345, y=60)
+    WIN.geometry("800x800+10+10")
+    WIN.mainloop()
 
 
 if __name__ == '__main__':
-    run_stat_caller()
+    main_gui_window()
