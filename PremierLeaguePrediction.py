@@ -1,94 +1,49 @@
 import pandas as pd
-from sklearn.model_selection import train_test_split
+import numpy as np
+from sklearn import preprocessing
 from sklearn.tree import DecisionTreeClassifier
-from tkinter import Tk, Label, Button, OptionMenu, StringVar, messagebox
+from sklearn.model_selection import train_test_split
 
-
-def predict_result():
-    # Get the selected home team and away team
-    home_team = home_team_var.get()
-    away_team = away_team_var.get()
-
-    # Create a new instance for prediction
-    instance = pd.DataFrame([[0, 0, 0, 0, 0, 0, 0, 0]], columns=features)
-
-    # Get the home team and away team statistics from the dataset
-    home_team_stats = filtered_data[filtered_data['HomeTeam'] == home_team][features].tail(1)
-    away_team_stats = filtered_data[filtered_data['AwayTeam'] == away_team][features].tail(1)
-
-    # Update the instance with the statistics
-    instance.update(home_team_stats)
-    instance.update(away_team_stats)
-
-    # Make the prediction
-    result = model.predict(instance)
-    if result[0] == 'H':
-        winner = home_team
-        loser = away_team
-    else:
-        winner = away_team
-        loser = home_team
-
-    messagebox.showinfo("Prediction Result", "{} wins ({} loses)".format(winner, loser))
-
-
-# Read the CSV file
+# Load the dataset
 data = pd.read_csv('final_dataset.csv')
 
-# Convert the 'Date' column to datetime format
-data['Date'] = pd.to_datetime(data['Date'], dayfirst=True)
+# Preprocess the data
+le = preprocessing.LabelEncoder()
+data['FTR'] = le.fit_transform(data['FTR'])
 
-# Extract the year from the 'Date' column and store it in a new column 'Year'
-data['Year'] = data['Date'].dt.year
-
-# Specify the range of years for inclusion in the decision tree
+# Specify the range of years for training the model
 start_year = int(input("Enter the start year: "))
 end_year = int(input("Enter the end year: "))
 
-# Filter the data based on the specified year range
-filtered_data = data[(data['Year'] >= start_year) & (data['Year'] <= end_year)]
+# Filter the dataset based on the specified range of years
+filtered_data = data.loc[(data['Date'].str[-2:] >= str(start_year)[-2:]) & (data['Date'].str[-2:] <= str(end_year)[-2:])]
 
-# Select the relevant features and target variable for the decision tree
-features = ['HTGS', 'ATGS', 'HTGC', 'ATGC', 'HTP', 'ATP', 'DiffPts', 'DiffFormPts']
-target = 'FTR'
+# Split the data into features and target variable
+X = filtered_data[['HTGS', 'ATGS', 'HTGC', 'ATGC', 'HTP', 'ATP']].values
+y = filtered_data['FTR'].values
 
 # Split the data into training and testing sets
-X = filtered_data[features]
-y = filtered_data[target]
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 # Train the decision tree model
-model = DecisionTreeClassifier()
-model.fit(X_train, y_train)
+decision_tree = DecisionTreeClassifier(random_state=42)
+decision_tree.fit(X_train, y_train)
 
-# Get the list of unique teams
-teams = sorted(set(filtered_data['HomeTeam']).union(set(filtered_data['AwayTeam'])))
+# GUI for Match Prediction
+while True:
+    print("Enter the Home Team:")
+    home_team = input()
 
-# GUI setup
-window = Tk()
-window.title("Premier League Prediction")
-window.geometry("400x200")
+    print("Enter the Away Team:")
+    away_team = input()
 
-# Home team selection
-home_team_label = Label(window, text="Home Team:")
-home_team_label.pack()
+    # Prepare the input features for prediction
+    home_stats = filtered_data.loc[filtered_data['HomeTeam'] == home_team].tail(1)[['HTGS', 'HTGC', 'HTP']].values
+    away_stats = filtered_data.loc[filtered_data['AwayTeam'] == away_team].tail(1)[['ATGS', 'ATGC', 'ATP']].values
+    input_features = np.concatenate((home_stats, away_stats), axis=1)
 
-home_team_var = StringVar(window)
-home_team_var.set(teams[0])  # Set the default value
-home_team_menu = OptionMenu(window, home_team_var, *teams)
-home_team_menu.pack()
+    # Predict the match outcome
+    predicted_result = le.inverse_transform(decision_tree.predict(input_features))[0]
 
-# Away team selection
-away_team_label = Label(window, text="Away Team:")
-away_team_label.pack()
-
-away_team_var = StringVar(window)
-away_team_var.set(teams[1])  # Set the default value
-away_team_menu = OptionMenu(window, away_team_var, *teams)
-away_team_menu.pack()
-
-# Predict button
-predict_button = Button(window, text="Predict", command=predict_result)
-predict_button.pack()
-
-window.mainloop()
+    print("Predicted Result: " + predicted_result)
+    print("------------------------")
